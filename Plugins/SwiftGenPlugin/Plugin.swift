@@ -21,9 +21,8 @@ struct SwiftGenPlugin: BuildToolPlugin {
     guard validate(configurations: configurations, target: target) else {
       return []
     }
-
-    // Clear the SwiftGen plugin's directory (in case of dangling files)
-    fileManager.forceClean(directory: context.pluginWorkDirectory)
+      
+    try? fileManager.createDirectory(atPath: target.directory.appending(["Generated"]).string, withIntermediateDirectories: true)
 
     return try configurations.map { configuration in
       try .swiftgen(using: configuration, context: context, target: target)
@@ -50,25 +49,28 @@ private extension SwiftGenPlugin {
 }
 
 private extension Command {
-  static func swiftgen(using configuration: Path, context: PluginContext, target: Target) throws -> Command {
-    .prebuildCommand(
-      displayName: "SwiftGen BuildTool Plugin",
-      executable: try context.tool(named: "swiftgen").path,
-      arguments: [
-        "config",
-        "run",
-        "--verbose",
-        "--config", "\(configuration)"
-      ],
-      environment: [
-        "PROJECT_DIR": context.package.directory,
-        "TARGET_NAME": target.name,
-        "PRODUCT_MODULE_NAME": target.moduleName,
-        "DERIVED_SOURCES_DIR": context.pluginWorkDirectory
-      ],
-      outputFilesDirectory: context.pluginWorkDirectory
-    )
-  }
+    static func swiftgen(using configuration: Path, context: PluginContext, target: Target) throws -> Command {
+        .buildCommand(
+            displayName: "SwiftGen BuildTool Plugin",
+            executable: try context.tool(named: "swiftgen").path,
+            arguments: [
+                "config",
+                "run",
+                "--verbose",
+                "--config", "\(configuration)"
+            ],
+            environment: [
+                "PROJECT_DIR": context.package.directory,
+                "TARGET_NAME": target.name,
+                "PRODUCT_MODULE_NAME": target.moduleName,
+                "DERIVED_SOURCES_DIR": context.pluginWorkDirectory
+            ],
+            inputFiles: [],
+            outputFiles: [
+                target.directory.appending(["Generated"])
+            ]
+        )
+    }
 }
 
 private extension FileManager {
