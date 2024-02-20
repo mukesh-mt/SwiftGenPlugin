@@ -22,9 +22,6 @@ struct SwiftGenPlugin: BuildToolPlugin {
       return []
     }
 
-    // Clear the SwiftGen plugin's directory (in case of dangling files)
-    fileManager.forceClean(directory: context.pluginWorkDirectory)
-
     return try configurations.map { configuration in
       try .swiftgen(using: configuration, context: context, target: target)
     }
@@ -50,25 +47,26 @@ private extension SwiftGenPlugin {
 }
 
 private extension Command {
-  static func swiftgen(using configuration: Path, context: PluginContext, target: Target) throws -> Command {
-    .prebuildCommand(
-      displayName: "SwiftGen BuildTool Plugin",
-      executable: try context.tool(named: "swiftgen").path,
-      arguments: [
-        "config",
-        "run",
-        "--verbose",
-        "--config", "\(configuration)"
-      ],
-      environment: [
-        "PROJECT_DIR": context.package.directory,
-        "TARGET_NAME": target.name,
-        "PRODUCT_MODULE_NAME": target.moduleName,
-        "DERIVED_SOURCES_DIR": context.pluginWorkDirectory
-      ],
-      outputFilesDirectory: context.pluginWorkDirectory
-    )
-  }
+    static func swiftgen(using configuration: Path, context: PluginContext, target: Target) throws -> Command {
+        .buildCommand(
+            displayName: "SwiftGen BuildTool Plugin",
+            executable: try context.tool(named: "swiftgen").path,
+            arguments: [
+                "config",
+                "run",
+                "--verbose",
+                "--config", "\(configuration)"
+            ],
+            environment: [
+                "PROJECT_DIR": context.package.directory,
+                "TARGET_NAME": target.name,
+                "PRODUCT_MODULE_NAME": target.moduleName,
+                "DERIVED_SOURCES_DIR": context.pluginWorkDirectory
+            ],
+            inputFiles: [],
+            outputFiles: []
+        )
+    }
 }
 
 private extension FileManager {
